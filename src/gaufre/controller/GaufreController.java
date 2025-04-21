@@ -3,6 +3,9 @@ package gaufre.controller;
 import gaufre.model.GaufreGame;
 import gaufre.view.GaufreView;
 
+import gaufre.model.GaufreIA;
+import gaufre.model.GaufreIAMinMax;
+
 import java.awt.event.*;
 import java.io.IOException;
 
@@ -10,15 +13,15 @@ public class GaufreController extends MouseAdapter implements ActionListener, Mo
     private GaufreGame model;
     private GaufreView view;
 
+    private GaufreIA ia = new GaufreIAMinMax(false, 6); // IA = joueur B, profondeur 6
+
     public GaufreController(GaufreGame model, GaufreView view) {
         this.model = model;
         this.view = view;
 
-        // les écouteurs pour les clics et les mouvements de la souris
         view.addMouseListener(this);
         view.addMouseMotionListener(this);
 
-        // les écouteurs pour les boutons directement
         System.out.println("Ajout de l'écouteur pour Nouvelle partie");
         view.getNewGameButton().addActionListener(this);
         System.out.println("Ajout de l'écouteur pour Annuler");
@@ -27,6 +30,13 @@ public class GaufreController extends MouseAdapter implements ActionListener, Mo
         view.getSaveButton().addActionListener(this);
         System.out.println("Ajout de l'écouteur pour Restaurer");
         view.getLoadButton().addActionListener(this);
+
+        // Appel initial de l'IA 
+        if (!model.isPlayerATurn() && view.isIAChecked()) {
+            javax.swing.Timer timer = new javax.swing.Timer(200, evt -> jouerIA());
+            timer.setRepeats(false);
+            timer.start();
+        }
     }
 
     @Override
@@ -40,10 +50,46 @@ public class GaufreController extends MouseAdapter implements ActionListener, Mo
                 if (model.isLosingMove(i, j)) {
                     String winner = model.isPlayerATurn() ? "Joueur A" : "Joueur B";
                     view.showMessage(winner + " a gagné !");
+                    return;
+                }
+
+                if (!model.isPlayerATurn() && view.isIAChecked()) {
+                    javax.swing.Timer timer = new javax.swing.Timer(200, evt -> jouerIA());
+                    timer.setRepeats(false);
+                    timer.start();
                 }
             } else {
                 view.showMessage("Coup invalide !");
             }
+        }
+    }
+
+    private void jouerIA() {
+        System.out.println("IA joue...");
+        System.out.println(">>> ia.getClass() = " + ia.getClass().getName());
+
+        if (!model.getGrid()[0][0]) return;
+
+        int[] coup = ia.calculerMeilleurCoup(model);
+
+        if (coup == null) {
+            System.out.println("Coup null !");
+            view.showMessage("IA n'a pas trouvé de coup !");
+            return;
+        }
+
+        System.out.println("Coup choisi : (" + coup[0] + ", " + coup[1] + ")");
+
+        if (model.playMove(coup[0], coup[1])) {
+            System.out.println("Coup accepté");
+            view.updateView();
+            if (model.isLosingMove(coup[0], coup[1])) {
+                String winner = model.isPlayerATurn() ? "Joueur A" : "Joueur B";
+                view.showMessage(winner + " a gagné !");
+            }
+        } else {
+            System.out.println("Coup refusé par le modèle !");
+            view.showMessage("Coup IA invalide : (" + coup[0] + ", " + coup[1] + ")");
         }
     }
 
@@ -53,7 +99,6 @@ public class GaufreController extends MouseAdapter implements ActionListener, Mo
             int[] cell = view.getCellAt(e.getX(), e.getY());
             int i = cell[0];
             int j = cell[1];
-            // Vérifier si la case est non mangée et n'est pas la case empoisonnée
             if (model.getGrid()[i][j]) {
                 view.setHoverCell(i, j);
             } else {
@@ -105,3 +150,4 @@ public class GaufreController extends MouseAdapter implements ActionListener, Mo
         }
     }
 }
+

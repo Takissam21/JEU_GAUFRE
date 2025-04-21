@@ -33,6 +33,7 @@ public class GaufreGame {
     }
 
     public boolean playMove(int i, int j) {
+        System.out.println("playMove appelé avec : (" + i + ", " + j + ")");
         if (i < 0 || i > a || j < 0 || j > b || !grid[i][j]) {
             return false;
         }
