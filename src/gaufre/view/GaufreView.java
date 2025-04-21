@@ -21,6 +21,9 @@ public class GaufreView extends JComponent {
     private BufferedImage beigeImage;
     private BufferedImage blackImage;
     private BufferedImage vertImage;
+    private BufferedImage redImage;
+    private int hoverRow = -1;
+    private int hoverCol = -1;
 
     public GaufreView(GaufreGame game) {
         this.game = game;
@@ -30,17 +33,18 @@ public class GaufreView extends JComponent {
             beigeImage = ImageIO.read(new File("images/gaufre_Beige.png"));
             blackImage = ImageIO.read(new File("images/gaufre_black.png"));
             vertImage = ImageIO.read(new File("images/gaufre_vert.png"));
+            redImage = ImageIO.read(new File("images/gaufre_red.png"));
         } catch (IOException e) {
             e.printStackTrace();
-            // En cas d'erreur, on peut utiliser des couleurs par défaut
             beigeImage = null;
             blackImage = null;
             vertImage = null;
+            redImage = null;
         }
 
         setLayout(null);
 
-        // les boutons
+        // Les boutons
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
         newGameButton = new JButton("Nouvelle partie");
@@ -74,6 +78,34 @@ public class GaufreView extends JComponent {
         add(statusLabel);
     }
 
+    // Getters pour accéder aux boutons
+    public JButton getNewGameButton() {
+        return newGameButton;
+    }
+
+    public JButton getUndoButton() {
+        return undoButton;
+    }
+
+    public JButton getSaveButton() {
+        return saveButton;
+    }
+
+    public JButton getLoadButton() {
+        return loadButton;
+    }
+
+    // Méthodes pour gérer le survol
+    public void setHoverCell(int row, int col) {
+        this.hoverRow = row;
+        this.hoverCol = col;
+        repaint();
+    }
+
+    public int[] getHoverCell() {
+        return new int[]{hoverRow, hoverCol};
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -86,24 +118,33 @@ public class GaufreView extends JComponent {
             for (int j = 0; j < cols; j++) {
                 BufferedImage imageToDraw;
 
-                // Déterminer quelle image utiliser
-                if (i == 0 && j == 0) {
-                    imageToDraw = vertImage; // Case empoisonnée
-                } else if (!grid[i][j]) {
-                    imageToDraw = blackImage; // Case mangée
-                } else {
-                    imageToDraw = beigeImage; // Case normale
+                // Case mangée
+                if (!grid[i][j]) {
+                    imageToDraw = blackImage;
+                }
+                // Case dans la zone de survol 
+                else if (hoverRow != -1 && hoverCol != -1 && i >= hoverRow && j >= hoverCol) {
+                    imageToDraw = redImage;
+                }
+                // Case poison 
+                else if (i == 0 && j == 0) {
+                    imageToDraw = vertImage;
+                }
+                // Case non mangée hors survol : beige
+                else {
+                    imageToDraw = beigeImage;
                 }
 
                 // Dessiner l'image ou une couleur de secours si l'image n'est pas chargée
                 if (imageToDraw != null) {
                     g.drawImage(imageToDraw, j * CELL_SIZE, i * CELL_SIZE + yOffset, CELL_SIZE, CELL_SIZE, null);
                 } else {
-                    // Couleurs de secours en cas d'échec de chargement des images
                     if (i == 0 && j == 0) {
                         g.setColor(Color.GREEN);
                     } else if (!grid[i][j]) {
                         g.setColor(Color.BLACK);
+                    } else if (hoverRow != -1 && hoverCol != -1 && i >= hoverRow && j >= hoverCol) {
+                        g.setColor(Color.RED);
                     } else {
                         g.setColor(Color.WHITE);
                     }
