@@ -2,36 +2,36 @@ package gaufre.controller;
 
 import gaufre.model.GaufreGame;
 import gaufre.view.GaufreView;
-
 import gaufre.model.GaufreIA;
 import gaufre.model.GaufreIAMinMax;
 
 import java.awt.event.*;
 import java.io.IOException;
 
-public class GaufreController extends MouseAdapter implements ActionListener, MouseMotionListener {
+public class GaufreController extends MouseAdapter implements ActionListener {
     private GaufreGame model;
     private GaufreView view;
-
     private GaufreIA ia = new GaufreIAMinMax(false, 6); // IA = joueur B, profondeur 6
+    private HistoryManager historyManager;
 
     public GaufreController(GaufreGame model, GaufreView view) {
         this.model = model;
         this.view = view;
+        this.historyManager = new HistoryManager(view);
 
         view.addMouseListener(this);
         view.addMouseMotionListener(this);
 
-        System.out.println("Ajout de l'écouteur pour Nouvelle partie");
         view.getNewGameButton().addActionListener(this);
-        System.out.println("Ajout de l'écouteur pour Annuler");
         view.getUndoButton().addActionListener(this);
-        System.out.println("Ajout de l'écouteur pour Sauvegarder");
         view.getSaveButton().addActionListener(this);
-        System.out.println("Ajout de l'écouteur pour Restaurer");
         view.getLoadButton().addActionListener(this);
+        view.getAbandonButton().addActionListener(this);
+        view.getClassementButton().addActionListener(this);
 
-        // Appel initial de l'IA 
+        // Ajouter un écouteur pour le bouton "Suggérer un coup"
+        view.getSuggestButton().addActionListener(e -> suggestMove());
+
         if (!model.isPlayerATurn() && view.isIAChecked()) {
             javax.swing.Timer timer = new javax.swing.Timer(200, evt -> jouerIA());
             timer.setRepeats(false);
@@ -50,9 +50,11 @@ public class GaufreController extends MouseAdapter implements ActionListener, Mo
                 if (model.isLosingMove(i, j)) {
                     String winner = model.isPlayerATurn() ? "Joueur A" : "Joueur B";
                     view.showMessage(winner + " a gagné !");
+                    historyManager.saveScore(winner, model.getHistory().size());
+                    historyManager.saveHistory("Victoire de " + winner, model.getHistory().size(), model.getHistory(), model.isPlayerATurn());
+                    historyManager.incrementPartieNumero();
                     return;
                 }
-
                 if (!model.isPlayerATurn() && view.isIAChecked()) {
                     javax.swing.Timer timer = new javax.swing.Timer(200, evt -> jouerIA());
                     timer.setRepeats(false);
@@ -65,30 +67,22 @@ public class GaufreController extends MouseAdapter implements ActionListener, Mo
     }
 
     private void jouerIA() {
-        System.out.println("IA joue...");
-        System.out.println(">>> ia.getClass() = " + ia.getClass().getName());
-
         if (!model.getGrid()[0][0]) return;
-
         int[] coup = ia.calculerMeilleurCoup(model);
-
         if (coup == null) {
-            System.out.println("Coup null !");
             view.showMessage("IA n'a pas trouvé de coup !");
             return;
         }
-
-        System.out.println("Coup choisi : (" + coup[0] + ", " + coup[1] + ")");
-
         if (model.playMove(coup[0], coup[1])) {
-            System.out.println("Coup accepté");
             view.updateView();
             if (model.isLosingMove(coup[0], coup[1])) {
                 String winner = model.isPlayerATurn() ? "Joueur A" : "Joueur B";
                 view.showMessage(winner + " a gagné !");
+                historyManager.saveScore(winner, model.getHistory().size());
+                historyManager.saveHistory("Victoire de " + winner, model.getHistory().size(), model.getHistory(), model.isPlayerATurn());
+                historyManager.incrementPartieNumero();
             }
         } else {
-            System.out.println("Coup refusé par le modèle !");
             view.showMessage("Coup IA invalide : (" + coup[0] + ", " + coup[1] + ")");
         }
     }
@@ -117,7 +111,6 @@ public class GaufreController extends MouseAdapter implements ActionListener, Mo
     @Override
     public void actionPerformed(ActionEvent e) {
         String command = e.getActionCommand();
-        System.out.println("Action reçue : " + command);
         switch (command) {
             case "Nouvelle partie":
                 model.resetGame();
@@ -147,7 +140,25 @@ public class GaufreController extends MouseAdapter implements ActionListener, Mo
                     view.showMessage("Erreur lors de la restauration : " + ex.getMessage());
                 }
                 break;
+            case "Abandonner":
+                String currentPlayer = model.isPlayerATurn() ? "Joueur A" : "Joueur B";
+                view.showMessage(currentPlayer + " a abandonné la partie !");
+                model.resetGame();
+                view.updateView();
+                break;
+            case "Classement":
+                historyManager.showClassement();
+                break;
+        }
+    }
+
+    // Nouvelle méthode pour suggérer un coup
+    private void suggestMove() {
+        int[] suggestedMove = model.getCoupAleatoire();
+        if (suggestedMove != null) {
+            view.setHoverCell(suggestedMove[0], suggestedMove[1]); // Mettre en surbrillance le coup suggéré
+        } else {
+            view.showMessage("Aucun coup valide disponible !");
         }
     }
 }
-

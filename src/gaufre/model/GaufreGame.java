@@ -7,6 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class GaufreGame {
     private int a, b;
@@ -23,7 +24,7 @@ public class GaufreGame {
 
         resetGrid();
     }
-
+    
     private void resetGrid() {
         for (int i = 0; i <= a; i++) {
             for (int j = 0; j <= b; j++) {
@@ -54,7 +55,7 @@ public class GaufreGame {
             return false;
         }
 
-        int[] lastMove = history.remove(history.size() - 1);
+        history.remove(history.size() - 1);
 
         // Restaurer la grille en rejouant tous les coups sauf le dernier
         resetGrid();
@@ -142,4 +143,24 @@ public class GaufreGame {
     public List<int[]> getHistory() {
         return new ArrayList<>(history);
     }
+
+    public int[] getCoupAleatoire() {
+        List<int[]> coupsValides = new ArrayList<>();
+
+        for (int i = 0; i < grid.length; i++) {
+            for (int j = 0; j < grid[0].length; j++) {
+                if (grid[i][j]) {
+                    coupsValides.add(new int[]{i, j});
+                }
+            }
+        }
+
+        if (coupsValides.isEmpty()) {
+            return null;
+        }
+
+        Random random = new Random();
+        return coupsValides.get(random.nextInt(coupsValides.size()));
+    }
+    
 }
