@@ -30,7 +30,8 @@ public class GaufreController extends MouseAdapter implements ActionListener {
         view.getClassementButton().addActionListener(this);
 
         // Ajouter un écouteur pour le bouton "Suggérer un coup"
-        view.getSuggestButton().addActionListener(e -> suggestMove());
+        //view.getSuggestButton().addActionListener(e -> suggestMove());
+        view.getSuggestButton().addActionListener(this);
 
         if (!model.isPlayerATurn() && view.isIAChecked()) {
             javax.swing.Timer timer = new javax.swing.Timer(200, evt -> jouerIA());
@@ -149,10 +150,18 @@ public class GaufreController extends MouseAdapter implements ActionListener {
             case "Classement":
                 historyManager.showClassement();
                 break;
+            case "Suggérer un coup":
+                int[] suggestedMove = model.getCoupAleatoire();
+                if (suggestedMove != null) {
+                    view.setHoverCell(suggestedMove[0], suggestedMove[1]); // Mettre en surbrillance le coup suggéré
+                } else {
+                    view.showMessage("Aucun coup valide disponible !");
+                }
+                break;
         }
     }
 
-    // Nouvelle méthode pour suggérer un coup
+    /* 
     private void suggestMove() {
         int[] suggestedMove = model.getCoupAleatoire();
         if (suggestedMove != null) {
@@ -161,4 +170,5 @@ public class GaufreController extends MouseAdapter implements ActionListener {
             view.showMessage("Aucun coup valide disponible !");
         }
     }
+    */
 }
